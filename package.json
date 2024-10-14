@@ -1,0 +1,19 @@
+{
+  "name": "qwik-astro-solana-nft-dapp",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/netlify": "^3.0.1",
+    "@builder.io/qwik": "^1.2.6",
+    "@qwikdev/astro": "^0.2.0",
+    "@solana/web3.js": "^1.78.0",
+    "astro": "^4.15.3"
+  }
+}

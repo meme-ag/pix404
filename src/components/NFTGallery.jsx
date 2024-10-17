@@ -1,49 +1,71 @@
 import { component$, useStore, useTask$ } from '@builder.io/qwik';
 import { Connection, PublicKey } from '@solana/web3.js';
+import { Image } from '@unpic/qwik';
 
 export const NFTGallery = component$(() => {
   const store = useStore({
     nfts: [],
     loading: true,
-    error: null
+    error: null,
+    walletConnected: false
   });
 
   useTask$(async () => {
     try {
-      const connection = new Connection('https://api.mainnet-beta.solana.com');
-      const walletAddress = new PublicKey('YOUR_WALLET_ADDRESS'); // Replace with actual wallet address
+      // Check if window.solana is available
+      if (typeof window !== 'undefined' && window.solana) {
+        // Attempt to connect to the wallet
+        await window.solana.connect();
+        store.walletConnected = true;
 
-      const nftAccounts = await connection.getParsedTokenAccountsByOwner(walletAddress, {
-        programId: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
-      });
+        const connection = new Connection('https://api.mainnet-beta.solana.com');
+        const walletAddress = new PublicKey(window.solana.publicKey.toString());
 
-      const nfts = nftAccounts.value
-        .filter(account => account.account.data.parsed.info.tokenAmount.uiAmount === 1)
-        .map(account => ({
-          mint: account.account.data.parsed.info.mint,
-          tokenAccount: account.pubkey.toBase58()
-        }));
+        const nftAccounts = await connection.getParsedTokenAccountsByOwner(walletAddress, {
+          programId: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
+        });
 
-      store.nfts = nfts;
-      store.loading = false;
+        const nfts = nftAccounts.value
+          .filter(account => account.account.data.parsed.info.tokenAmount.uiAmount === 1)
+          .map(account => ({
+            mint: account.account.data.parsed.info.mint,
+            tokenAccount: account.pubkey.toBase58()
+          }));
+
+        store.nfts = nfts;
+      } else {
+        store.error = 'Solana wallet not detected. Please install a Solana wallet extension.';
+      }
     } catch (error) {
       console.error('Error fetching NFTs:', error);
-      store.error = 'Failed to fetch NFTs. Please try again later.';
+      store.error = 'Failed to connect to wallet or fetch NFTs. Please try again later.';
+    } finally {
       store.loading = false;
     }
   });
 
   return (
-    <div>
-      <h2>Your NFTs</h2>
+    <div class="nft-gallery">
+      <h2 class="pixelated-text">Your NFTs</h2>
       {store.loading ? (
-        <p>Loading your NFTs...</p>
+        <p class="pixelated-text">Loading your NFTs...</p>
       ) : store.error ? (
-        <p>{store.error}</p>
+        <p class="pixelated-text error">{store.error}</p>
+      ) : !store.walletConnected ? (
+        <p class="pixelated-text">Please connect your Solana wallet to view your NFTs.</p>
+      ) : store.nfts.length === 0 ? (
+        <p class="pixelated-text">No NFTs found in this wallet.</p>
       ) : (
-        <ul>
+        <ul class="nft-list">
           {store.nfts.map((nft) => (
-            <li key={nft.mint}>
+            <li key={nft.mint} class="nft-item pixelated-text">
+              <Image
+                src={`https://arweave.net/${nft.mint}`}
+                alt={`NFT ${nft.mint}`}
+                width={200}
+                height={200}
+                layout="constrained"
+              />
               <p>Mint: {nft.mint}</p>
               <p>Token Account: {nft.tokenAccount}</p>
             </li>
